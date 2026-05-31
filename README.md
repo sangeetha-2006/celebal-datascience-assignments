@@ -18,6 +18,7 @@ Topics Covered:
 Notebook:
 
 * week1_lunavathSangeetha.ipynb
+* [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sangeetha-2006/celebal-datascience-assignments/blob/main/week1_submission.ipynb)
 
 ## Author
 
