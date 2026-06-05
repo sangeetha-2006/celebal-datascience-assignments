@@ -74,7 +74,7 @@ This repository contains assignments and projects completed as part of the Celeb
 
 * `week2_LUNAVATH_SANGEETHA.ipynb`
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sangeetha-2006/celebal-datascience-assignments/blob/main/week2_LUNAVATH_SANGEETHA.ipynb)
+
 
 ---
 
