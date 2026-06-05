@@ -70,13 +70,6 @@ This repository contains assignments and projects completed as part of the Celeb
 * Achieved approximately **99.01% R² Score** on the test dataset.
 * Analyzed overfitting/underfitting and prevented data leakage using chronological splitting.
 
-**Notebook:**
-
-* `week2_LUNAVATH_SANGEETHA.ipynb`
-
-
-
----
 
 ## Author
 
