@@ -57,19 +57,6 @@ This repository contains assignments and projects completed as part of the Celeb
 * Forecasting
 * Chronological Train-Test Split
 
-**Project Highlights:**
-
-* Performed data preprocessing and cleaning.
-* Conducted exploratory data analysis using visualizations.
-* Applied one-hot encoding for categorical features.
-* Created lag features and rolling statistics for time-series forecasting.
-* Implemented Linear Regression, Ridge Regression, and Lasso Regression models.
-* Used Pipeline and StandardScaler for streamlined preprocessing.
-* Performed hyperparameter tuning using GridSearchCV.
-* Evaluated model performance using MAE, RMSE, and R² Score.
-* Achieved approximately **99.01% R² Score** on the test dataset.
-* Analyzed overfitting/underfitting and prevented data leakage using chronological splitting.
-
 
 ## Author
 
