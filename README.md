@@ -2,17 +2,6 @@
 
 This repository contains assignments and projects completed as part of the Celebal Data Science Program.
 
-## Repository Structure
-
-```text
-celebal-datascience-assignments/
-│
-├── week1/
-├── week2/
-├── week3/
-├── README.md
-└── .gitignore
-```
 
 ---
 
