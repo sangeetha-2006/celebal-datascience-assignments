@@ -78,15 +78,6 @@ Developed a Customer Intelligence System using unsupervised machine learning tec
 * PCA (Principal Component Analysis)
 * Silhouette Score Evaluation
 
-### Results
-
-* Determined optimal cluster count using Elbow Method
-* Trained K-Means model with K = 3
-* Evaluated clustering performance using Silhouette Score
-* Built comparative DBSCAN clustering model
-* Visualized clusters using PCA
-* Identified developed, developing, and underdeveloped country groups
-
 ---
 
 # Author
