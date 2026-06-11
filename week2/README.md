@@ -2,77 +2,57 @@
 
 ## Project Overview
 
-This project develops an end-to-end Machine Learning pipeline for forecasting Tesla vehicle deliveries using historical production and delivery data from 2015–2025.
+This project develops an end-to-end Machine Learning pipeline to forecast Tesla vehicle deliveries using historical Tesla production and delivery data from 2015 to 2025.
 
-The workflow includes data preprocessing, exploratory data analysis (EDA), feature engineering, model training, hyperparameter tuning, forecasting, and time-series stationarity testing.
+The workflow includes data cleaning, exploratory data analysis (EDA), feature engineering, predictive modeling, cross-validation, hyperparameter tuning, feature importance analysis, and time-series stationarity testing.
 
 ---
 
-## Dataset
+## Dataset Information
 
-**File:** `tesla_deliveries_dataset_2015_2025.csv`
+**Dataset:** Tesla Deliveries Dataset (2015–2025)
 
-### Dataset Information
+### Dataset Shape
 
-* Total Records: 2640
-* Total Columns: 12
+* Rows: 2640
+* Columns: 12
 
 ### Target Variable
 
-* `Estimated_Deliveries`
+* Estimated_Deliveries
 
 ---
 
 ## Objectives
 
-1. Perform data cleaning and validation.
-2. Conduct Exploratory Data Analysis (EDA).
-3. Encode categorical variables.
-4. Create lag and rolling mean features.
-5. Train and evaluate Linear Regression.
-6. Perform 5-Fold Cross Validation.
-7. Optimize Random Forest using GridSearchCV.
-8. Analyze feature importance.
-9. Perform ADF stationarity testing.
-10. Generate delivery forecasts.
+* Perform data quality checks.
+* Conduct exploratory data analysis.
+* Create time-series features.
+* Train and evaluate Linear Regression.
+* Perform 5-Fold Cross Validation.
+* Optimize Random Forest using GridSearchCV.
+* Analyze feature importance.
+* Perform ADF stationarity testing.
+* Generate delivery forecasts.
 
 ---
 
-## Technologies Used
+## Data Preprocessing
 
-* Python
-* NumPy
-* Pandas
-* Matplotlib
-* Seaborn
-* Scikit-learn
-* Statsmodels
+### Data Quality Checks
 
----
+* Missing values checked.
+* Duplicate records checked.
+* Dataset structure validated using:
 
-## Exploratory Data Analysis
+  * shape
+  * columns
+  * info()
+  * describe()
 
-The following visualizations were created:
+### Feature Engineering
 
-1. Deliveries by Model
-2. Deliveries by Region
-3. Correlation Heatmap
-4. Production Units vs Estimated Deliveries
-5. Delivery Trend Over Time
-
----
-
-## Feature Engineering
-
-### Label Encoding
-
-The following categorical variables were encoded:
-
-* Region
-* Model
-* Source_Type
-
-### Engineered Features
+Created two forecasting features:
 
 #### Deliveries_Lag1
 
@@ -82,40 +62,98 @@ Previous period delivery value.
 
 Three-period rolling average of deliveries.
 
+### Encoding
+
+Label Encoding applied to:
+
+* Region
+* Model
+* Source_Type
+
 ---
 
-## Models Implemented
+## Exploratory Data Analysis
+
+The following visualizations were generated:
+
+1. Deliveries by Model
+2. Deliveries by Region
+3. Correlation Heatmap
+4. Production Units vs Estimated Deliveries Scatter Plot
+5. Time-Series Delivery Trend
+
+### Key Finding
+
+The correlation analysis showed a very strong positive relationship between Production_Units and Estimated_Deliveries, making production volume one of the strongest predictors.
+
+---
+
+## Machine Learning Models
 
 ### Linear Regression
 
-Evaluation Metrics:
+Performance:
 
-* Mean Absolute Error (MAE)
-* Root Mean Squared Error (RMSE)
-* R² Score
+* MAE: 310.33
+* RMSE: 375.56
+* R² Score: 0.9908
 
-### Random Forest Regressor
+### Cross Validation
 
-Hyperparameter tuning performed using:
+5-Fold Cross Validation Results:
 
-* n_estimators = [50, 100]
-* max_depth = [5, 10, None]
+* Fold 1: 0.9906
+* Fold 2: 0.9905
+* Fold 3: 0.9895
+* Fold 4: 0.9905
+* Fold 5: 0.9908
 
-GridSearchCV was used to select the best model.
+#### Mean R² Score
+
+0.9904
+
+#### Standard Deviation
+
+0.0005
+
+These results demonstrate excellent model stability and generalization.
 
 ---
 
-## Validation
+## Random Forest Regressor
 
-### 5-Fold Cross Validation
+### Hyperparameter Tuning
 
-Cross-validation was performed to evaluate model stability and generalization performance.
+GridSearchCV Best Parameters:
 
-Metrics Reported:
+```python
+{
+    'max_depth': None,
+    'n_estimators': 50
+}
+```
 
-* Fold-wise R² Scores
-* Mean R² Score
-* Standard Deviation
+### Performance
+
+* MAE: 303.86
+* RMSE: 388.55
+* R² Score: 0.9902
+
+The Random Forest model achieved strong predictive performance and confirmed the effectiveness of the engineered features.
+
+---
+
+## Feature Importance Analysis
+
+Feature importance analysis was performed using the optimized Random Forest model.
+
+Most influential predictors included:
+
+* Production_Units
+* Deliveries_Lag1
+* Rolling_Mean_3
+
+These variables contributed significantly to delivery forecasting accuracy.
 
 ---
 
@@ -123,17 +161,32 @@ Metrics Reported:
 
 ### Augmented Dickey-Fuller (ADF) Test
 
-The ADF test was applied to determine whether the delivery series is stationary.
+The ADF test was performed on the Estimated_Deliveries series to evaluate stationarity.
 
 Decision Rule:
 
 * p-value < 0.05 → Stationary
 * p-value ≥ 0.05 → Non-Stationary
 
+The test result was interpreted accordingly within the notebook.
+
 ---
+
+## Forecasting
+
+A forecast table was generated comparing:
+
+* Actual Deliveries
+* Predicted Deliveries
+* Error Percentage
+
+for the first 20 test observations.
+
+---
+
 
 ## Author
 
-**Sangeetha**
+**Lunavath Sangeetha**
 
 Celebal Data Science Program
