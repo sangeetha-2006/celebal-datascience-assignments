@@ -34,6 +34,6 @@ Develop a Customer Intelligence System using classification, ensemble learning, 
 * Country_Clustered_Output.csv
 
   
-  ## Author
+## Author
 
 **Lunavath Sangeetha**
