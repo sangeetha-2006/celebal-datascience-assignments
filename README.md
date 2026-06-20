@@ -2,13 +2,17 @@
 
 This repository contains assignments and projects completed as part of the Celebal Technologies Data Science Program.
 
-## Repository Structure
+---
+
+## 📁 Repository Structure
 
 ### Week 1
 - Python Fundamentals
 - NumPy
 - Pandas
 - Statistics & Probability
+
+---
 
 ### Week 2
 - Machine Learning Pipeline
@@ -17,6 +21,8 @@ This repository contains assignments and projects completed as part of the Celeb
 - Linear Regression
 - Random Forest
 
+---
+
 ### Week 3
 - Customer Intelligence System
 - K-Means Clustering
@@ -24,7 +30,9 @@ This repository contains assignments and projects completed as part of the Celeb
 - PCA Visualization
 - Cluster Analysis
 
- ## Week 4
+---
+
+### Week 4
 - Deep Learning Basics
 - CIFAR-10 Image Classification
 - Artificial Neural Network (ANN)
@@ -34,6 +42,7 @@ This repository contains assignments and projects completed as part of the Celeb
 - TensorFlow / Keras Implementation
 - Training Optimization (Dropout, Batch Normalization, EarlyStopping)
 
-- ## Author
+---
 
+## 👩‍💻 Author
 **Lunavath Sangeetha**
