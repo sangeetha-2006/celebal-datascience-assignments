@@ -1,6 +1,6 @@
 # Celebal Data Science Assignments
 
-This repository contains assignments and projects completed as part of the Celebal Technologies Data Science Program.
+This repository contains assignments and projects completed as part of the **Celebal Technologies Data Science Program**.
 
 ---
 
@@ -44,5 +44,18 @@ This repository contains assignments and projects completed as part of the Celeb
 
 ---
 
+### Week 5
+- Text Generation using SimpleRNN, LSTM, and GRU
+- Text Preprocessing & Tokenization
+- N-gram Sequence Creation
+- Word Embeddings
+- Next-Word Prediction
+- Training Loss Comparison
+- Text Generation using Seed Phrase
+- TensorFlow / Keras Implementation
+
+---
+
 ## 👩‍💻 Author
 **Lunavath Sangeetha**
+```
