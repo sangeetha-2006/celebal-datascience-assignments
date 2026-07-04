@@ -56,6 +56,17 @@ This repository contains assignments and projects completed as part of the **Cel
 
 ---
 
+### Week 6
+- Image Denoising using Autoencoder
+- MNIST Dataset
+- Encoder–Decoder Architecture
+- Image Reconstruction
+- Autoencoder Training
+- Generative AI Basics
+- RAG (LangChain)
+- Prompt Engineering
+
+---
 ## 👩‍💻 Author
 **Lunavath Sangeetha**
 ```
