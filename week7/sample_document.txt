@@ -1,0 +1,70 @@
+Introduction to Retrieval-Augmented Generation (RAG)
+
+Retrieval-Augmented Generation, or RAG, is a technique that combines information
+retrieval with text generation. Instead of relying purely on the internal knowledge
+of a language model, a RAG system first searches a knowledge base for relevant
+information and then uses that information to generate a grounded, accurate answer.
+
+Why RAG Matters
+
+Large language models are trained on data up to a certain point in time and do not
+know about private, recent, or domain-specific information unless it is provided
+to them directly. RAG solves this problem by letting the model "look up" relevant
+facts before answering, similar to how a student might check a textbook before
+answering an exam question.
+
+How RAG Works
+
+A RAG pipeline usually has two main phases: indexing and querying.
+
+In the indexing phase, documents are loaded, split into smaller chunks, and each
+chunk is converted into a numerical vector called an embedding. These embeddings
+are stored in a vector database that allows fast similarity search.
+
+In the querying phase, the user's question is also converted into an embedding.
+The system compares this embedding to all the stored chunk embeddings and retrieves
+the most similar ones. These retrieved chunks are then given to a language model
+as context, along with the original question, so the model can generate an answer
+that is grounded in the retrieved text.
+
+Common Components
+
+Embedding models convert text into vectors that capture semantic meaning. Popular
+choices include models from the sentence-transformers library, such as
+all-MiniLM-L6-v2, which is small and fast enough to run on a laptop CPU.
+
+Vector databases store embeddings and support similarity search. FAISS, developed
+by Meta AI, is a popular open-source library for this purpose and works well for
+small to medium-sized projects.
+
+Language models generate the final answer. For local, free experimentation,
+smaller models such as Google's FLAN-T5 family work well because they can run
+without a GPU and without any paid API.
+
+Applications of RAG
+
+RAG systems are used in customer support chatbots, internal company knowledge
+assistants, legal and medical document search tools, coding assistants that search
+documentation, and academic research assistants that answer questions from papers.
+
+Advantages of RAG
+
+RAG reduces hallucination because answers are grounded in real retrieved text.
+It allows a model to answer questions about private or recent data without being
+retrained. It is also cheaper than fine-tuning a model on new data, since only the
+retrieval index needs to be updated when new documents are added.
+
+Limitations of RAG
+
+The quality of answers depends heavily on the quality of retrieval. If the wrong
+chunks are retrieved, the generated answer may be irrelevant or incorrect. Chunking
+strategy, embedding model choice, and the number of retrieved chunks all affect
+overall performance. Poorly chunked documents, for example splitting a sentence in
+half, can hurt retrieval accuracy significantly.
+
+Conclusion
+
+Retrieval-Augmented Generation is a practical and widely used approach for building
+AI systems that can answer questions using custom or private data. By combining a
+retrieval step with a generation step, RAG systems produce answers that are both
+relevant and grounded in real source material.
