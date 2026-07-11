@@ -67,6 +67,20 @@ This repository contains assignments and projects completed as part of the **Cel
 - Prompt Engineering
 
 ---
+
+### Week 7
+- Retrieval-Augmented Generation (RAG) System
+- Document Question Answering Pipeline
+- Custom Document & Hugging Face Dataset Ingestion
+- Text Chunking Strategies
+- Sentence-Transformer Embeddings (all-MiniLM-L6-v2)
+- FAISS Vector Database & Similarity Search
+- Hybrid Search (BM25 + Vector Retrieval)
+- Cross-Encoder Re-ranking
+- Local LLM Answer Generation (FLAN-T5)
+- Validation Logs & System Metrics Reporting
+
+---
 ## 👩‍💻 Author
 **Lunavath Sangeetha**
 ```
