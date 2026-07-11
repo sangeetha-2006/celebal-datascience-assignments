@@ -5,3 +5,5 @@ torch
 pypdf
 numpy
 sentencepiece
+rank_bm25
+datasets
