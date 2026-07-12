@@ -12,9 +12,14 @@ import requests
 
 
 def get_current_datetime(_query: str = "") -> str:
-    """Return the current UTC date and time. No network call needed."""
-    now = datetime.now(timezone.utc)
-    return f"Current UTC date/time: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    """Return the current local date and time (using the machine's own
+    timezone), plus UTC for reference.
+    """
+    local_now = datetime.now().astimezone()
+    tz_name = local_now.tzname() or "local time"
+    local_str = local_now.strftime("%Y-%m-%d %I:%M:%S %p")
+    utc_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    return f"Current time: {local_str} ({tz_name}) — {utc_str} UTC"
 
 
 def get_weather(location: str) -> str:

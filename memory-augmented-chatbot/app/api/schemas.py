@@ -11,6 +11,9 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
+    used_rag: bool
+    used_kg: bool
+    used_tool: bool
 
 
 class MemoryResponse(BaseModel):

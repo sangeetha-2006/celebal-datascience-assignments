@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory-Augmented Chatbot — RAG + Knowledge Graph + Memory</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#top" class="nav-logo"><span class="dot"></span>MEMCHAT</a>
+  <div class="nav-links">
+    <a href="#architecture">Architecture</a>
+    <a href="#phases">Build</a>
+    <a href="#stack">Stack</a>
+    <a href="#eval">Evaluation</a>
+    <a href="chat.html" class="nav-cta">Try it →</a>
+  </div>
+</nav>
+
+<header class="hero wrap" id="top">
+  <div class="eyebrow">System schematic · Rev 1.0 · 2026</div>
+  <h1>A chatbot that remembers,<br>retrieves, and reasons.</h1>
+  <p style="max-width:560px; font-size:1.05rem;">
+    Memory-Augmented Chatbot combines retrieval-augmented generation, a
+    Neo4j knowledge graph, and persistent long-term memory — orchestrated
+    by a LangGraph agent that decides, per query, what kind of knowledge
+    the answer actually needs.
+  </p>
+  <div class="hero-actions">
+    <a href="chat.html" class="btn btn-primary">Open the chat interface</a>
+    <a href="#architecture" class="btn">View the architecture</a>
+  </div>
+
+  <div class="title-block">
+    <div><span class="label">Project</span><span class="value">memory-augmented-chatbot</span></div>
+    <div><span class="label">Components</span><span class="value">7 subsystems</span></div>
+    <div><span class="label">Runtime cost</span><span class="value">$0.00</span></div>
+    <div><span class="label">Status</span><span class="value" style="color:var(--active)">● operational</span></div>
+  </div>
+</header>
+
+<section id="architecture" class="wrap">
+  <div class="eyebrow">01 · System Diagram</div>
+  <h2>How a question becomes an answer</h2>
+  <p>Every message passes through four knowledge sources before a response is generated — the agent decides which ones actually matter for the query in front of it.</p>
+
+  <div class="diagram-frame">
+    <svg viewBox="0 0 1000 470" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="edge-arrow"/>
+        </marker>
+      </defs>
+
+      <!-- Ingestion row -->
+      <g>
+        <rect class="node-box" x="30" y="20" width="130" height="52" rx="3"/>
+        <text class="node-label" x="95" y="42" text-anchor="middle">SCRAPE</text>
+        <text class="node-sub" x="95" y="58" text-anchor="middle">requests + bs4</text>
+
+        <rect class="node-box" x="210" y="20" width="130" height="52" rx="3"/>
+        <text class="node-label" x="275" y="42" text-anchor="middle">CLEAN</text>
+        <text class="node-sub" x="275" y="58" text-anchor="middle">strip boilerplate</text>
+
+        <rect class="node-box" x="390" y="20" width="130" height="52" rx="3"/>
+        <text class="node-label" x="455" y="42" text-anchor="middle">CHUNK</text>
+        <text class="node-sub" x="455" y="58" text-anchor="middle">recursive splitter</text>
+
+        <path class="edge" d="M160,46 H210" marker-end="url(#arrow)"/>
+        <path class="edge" d="M340,46 H390" marker-end="url(#arrow)"/>
+      </g>
+
+      <!-- Down connectors to stores -->
+      <path class="edge edge-dashed" d="M455,72 V150" marker-end="url(#arrow)"/>
+      <path class="edge edge-dashed" d="M275,72 V90 H590 V150" marker-end="url(#arrow)"/>
+
+      <!-- Knowledge store row -->
+      <g>
+        <rect class="node-box" x="30" y="150" width="150" height="56" rx="3"/>
+        <text class="node-label" x="105" y="174" text-anchor="middle">MEMORY</text>
+        <text class="node-sub" x="105" y="190" text-anchor="middle">SQLite</text>
+
+        <rect class="node-box" x="220" y="150" width="150" height="56" rx="3"/>
+        <text class="node-label" x="295" y="174" text-anchor="middle">RAG INDEX</text>
+        <text class="node-sub" x="295" y="190" text-anchor="middle">FAISS + MiniLM</text>
+
+        <rect class="node-box" x="410" y="150" width="180" height="56" rx="3"/>
+        <text class="node-label" x="500" y="174" text-anchor="middle">KNOWLEDGE GRAPH</text>
+        <text class="node-sub" x="500" y="190" text-anchor="middle">Neo4j + spaCy</text>
+
+        <rect class="node-box" x="630" y="150" width="150" height="56" rx="3"/>
+        <text class="node-label" x="705" y="174" text-anchor="middle">LIVE TOOLS</text>
+        <text class="node-sub" x="705" y="190" text-anchor="middle">time · weather</text>
+      </g>
+
+      <!-- Connectors down into agent -->
+      <path class="edge" d="M105,206 V240 H430 V270" marker-end="url(#arrow)"/>
+      <path class="edge" d="M295,206 V270" marker-end="url(#arrow)"/>
+      <path class="edge" d="M500,206 V270" marker-end="url(#arrow)"/>
+      <path class="edge" d="M705,206 V240 H570 V270" marker-end="url(#arrow)"/>
+
+      <!-- Agent -->
+      <rect class="node-box node-accent" x="270" y="270" width="330" height="60" rx="3"/>
+      <text class="node-label" x="435" y="296" text-anchor="middle" style="fill:var(--accent)">AGENT</text>
+      <text class="node-sub" x="435" y="314" text-anchor="middle">LangGraph orchestration + routing</text>
+
+      <!-- Agent -> Generate -->
+      <path class="edge" d="M435,330 V360" marker-end="url(#arrow)"/>
+
+      <rect class="node-box" x="320" y="360" width="230" height="56" rx="3"/>
+      <text class="node-label" x="435" y="384" text-anchor="middle">GENERATE</text>
+      <text class="node-sub" x="435" y="400" text-anchor="middle">Ollama · gemma2:2b (local)</text>
+
+      <path class="edge" d="M435,416 V440" marker-end="url(#arrow)"/>
+      <text class="node-label" x="435" y="460" text-anchor="middle" style="fill:var(--active)">RESPONSE</text>
+    </svg>
+  </div>
+</section>
+
+<section id="phases" class="wrap">
+  <div class="eyebrow">02 · Build Sequence</div>
+  <h2>Seven phases, each one runnable on its own</h2>
+  <p>The system was built incrementally — every phase works standalone via its own CLI, and the API in Phase 7 ties them all together.</p>
+
+  <div class="phase-list">
+    <div class="phase">
+      <div class="phase-num mono">1</div>
+      <h3>Data Ingestion</h3>
+      <p>Scrape → clean → chunk web content into retrievable pieces.</p>
+    </div>
+    <div class="phase">
+      <div class="phase-num mono">2</div>
+      <h3>RAG</h3>
+      <p>Embed chunks locally (sentence-transformers), retrieve via FAISS vector search.</p>
+    </div>
+    <div class="phase">
+      <div class="phase-num mono">3</div>
+      <h3>Knowledge Graph</h3>
+      <p>Extract entities/relationships with spaCy, store as a queryable graph in Neo4j.</p>
+    </div>
+    <div class="phase">
+      <div class="phase-num mono">4</div>
+      <h3>Long-Term Memory</h3>
+      <p>Persist user preferences and full conversation history in SQLite.</p>
+    </div>
+    <div class="phase">
+      <div class="phase-num mono">5</div>
+      <h3>LangGraph Agent</h3>
+      <p>Orchestrate RAG + KG + memory + live tools, generate with a local LLM.</p>
+    </div>
+    <div class="phase">
+      <div class="phase-num mono">6</div>
+      <h3>Evaluation</h3>
+      <p>Score context relevance, answer relevance, and faithfulness — no manual grading.</p>
+    </div>
+    <div class="phase">
+      <div class="phase-num mono">7</div>
+      <h3>API Layer</h3>
+      <p>Expose everything through FastAPI, with this interface as the frontend.</p>
+    </div>
+  </div>
+</section>
+
+<section id="stack" class="wrap">
+  <div class="eyebrow">03 · Bill of Materials</div>
+  <h2>Tech stack</h2>
+  <table>
+    <thead>
+      <tr><th>Layer</th><th>Technology</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="key">Scraping</td><td>requests + BeautifulSoup</td><td>Simple, reliable HTML extraction</td></tr>
+      <tr><td class="key">Embeddings</td><td>sentence-transformers</td><td>Free, local, no API key</td></tr>
+      <tr><td class="key">Vector store</td><td>FAISS</td><td>Fast, in-process similarity search</td></tr>
+      <tr><td class="key">Entity extraction</td><td>spaCy</td><td>Free, offline NER + relations</td></tr>
+      <tr><td class="key">Knowledge graph</td><td>Neo4j AuraDB</td><td>Purpose-built graph queries</td></tr>
+      <tr><td class="key">Memory</td><td>SQLite</td><td>Zero-setup persistence</td></tr>
+      <tr><td class="key">Orchestration</td><td>LangGraph</td><td>Explicit, inspectable agent state</td></tr>
+      <tr><td class="key">Generation</td><td>Ollama (gemma2:2b)</td><td>Fully local, no billing or quota</td></tr>
+      <tr><td class="key">API</td><td>FastAPI</td><td>Async, auto-documented</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="eval" class="wrap">
+  <div class="eyebrow">04 · Instrument Readout</div>
+  <h2>Evaluation results</h2>
+  <p>Measured automatically against a sample dataset — no paid API, no manual grading. Reproduce with <code class="mono">python -m app.eval.run_eval</code>.</p>
+
+  <div class="gauges">
+    <div>
+      <div class="gauge-label"><span>Context relevance</span><span>0.46</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:46%"></div></div>
+    </div>
+    <div>
+      <div class="gauge-label"><span>Answer relevance</span><span>0.73</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:73%"></div></div>
+    </div>
+    <div>
+      <div class="gauge-label"><span>Faithfulness</span><span>0.52</span></div>
+      <div class="gauge-track"><div class="gauge-fill" style="width:52%"></div></div>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <h3>WHY NOT PERFECT</h3>
+      <p>A 2B-parameter local model occasionally blends retrieved facts with its own training knowledge instead of staying strictly grounded — the tradeoff for running fully free and local.</p>
+    </div>
+    <div class="card">
+      <h3>DESIGN CHOICE</h3>
+      <p>SQLite replaces MongoDB/Postgres, spaCy replaces LLM-based extraction, and Ollama replaces a hosted API — each swap trades some accuracy for zero cost and zero setup friction.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="wrap">
+  <div class="mono">MEMCHAT · MEMORY-AUGMENTED CHATBOT · BUILT WITH RAG + KNOWLEDGE GRAPH + LANGGRAPH · MIT LICENSE</div>
+</footer>
+
+</body>
+</html>
