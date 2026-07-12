@@ -1,318 +1,371 @@
-# Memory-Augmented Chatbot with Knowledge Graph and Hybrid RAG
+# 🧠 Memory-Augmented Chatbot
 
-End-to-end system combining RAG, a knowledge graph, long-term user memory, and
-LangGraph-based tool routing for context-aware, personalized responses.
+**RAG + Knowledge Graph + Long-Term Memory + LangGraph Agent — built entirely with free, local tools.**
 
-This repo is being built in phases. **Phase 1 (this drop): project scaffold + data ingestion pipeline.**
+A context-aware, personalized chatbot system that combines static knowledge
+retrieval (RAG), structured reasoning (a knowledge graph), long-term user
+memory, and dynamic real-time tools, orchestrated by a LangGraph agent and
+measured by a custom evaluation framework.
+
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-web%20API-teal)
+![LangGraph](https://img.shields.io/badge/LangGraph-agent%20orchestration-purple)
+![Neo4j](https://img.shields.io/badge/Neo4j-knowledge%20graph-brightgreen)
+![Ollama](https://img.shields.io/badge/Ollama-local%20LLM-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Web Interface](#web-interface)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Quick Start](#quick-start)
+- [Detailed Setup Per Phase](#detailed-setup-per-phase)
+- [Evaluation Results](#evaluation-results)
+- [Design Decisions](#design-decisions)
+- [Known Limitations](#known-limitations)
+- [License](#license)
+
+---
+
+## Overview
+
+This project implements a full memory-augmented chatbot pipeline in 8 phases:
+
+| Phase | Component | Purpose |
+|-------|-----------|---------|
+| 1 | **Data Ingestion** | Scrape → clean → chunk web content into retrievable pieces |
+| 2 | **RAG** | Embed chunks locally, retrieve relevant context via FAISS vector search |
+| 3 | **Knowledge Graph** | Extract entities/relationships, store as a queryable graph in Neo4j |
+| 4 | **Long-Term Memory** | Persist user preferences + conversation history (SQLite) |
+| 5 | **LangGraph Agent** | Orchestrate RAG + KG + memory + live tools, generate responses |
+| 6 | **Evaluation** | Score context relevance, answer relevance, and faithfulness |
+| 7 | **API Layer** | Expose everything via FastAPI |
+| 8 | **Web Interface** | A landing page + live chat console, served by the API itself |
+
+**Every phase runs entirely free and mostly offline** — no OpenAI billing,
+no paid cloud services required. See [Design Decisions](#design-decisions)
+for why, and what a production version might swap in instead.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    UI[Web UI<br/>index.html + chat.html] -->|POST /chat| API[FastAPI]
+    API --> A[LangGraph Agent]
+
+    A --> M[Load Memory<br/>SQLite]
+    A --> R[Retrieve RAG Context<br/>FAISS + sentence-transformers]
+    A --> K[Query Knowledge Graph<br/>Neo4j]
+    A --> D{Needs live data?}
+
+    D -- yes --> T[Call Tool<br/>time / weather]
+    D -- no --> G[Generate Answer]
+    T --> G[Generate Answer<br/>Ollama - local LLM]
+
+    M --> G
+    R --> G
+    K --> G
+
+    G --> S[Save Turn to Memory]
+    S --> RES[used_rag / used_kg / used_tool<br/>+ answer]
+    RES -->|JSON response| UI
+
+    subgraph Ingestion Pipeline
+        W[Web Scraper] --> C[Cleaner] --> CH[Chunker] --> R
+        CH --> E[Entity Extractor<br/>spaCy] --> K
+    end
+```
+
+The web UI isn't just a chat box — the `/chat` endpoint reports back *which*
+subsystems actually contributed to each answer (`used_rag`, `used_kg`,
+`used_tool`), and the frontend visualizes that live as a status panel. See
+[Web Interface](#web-interface) below.
+
+## Web Interface
+
+A static frontend (plain HTML/CSS/JS, no build step) lives in `web/` and is
+served directly by the FastAPI app at `/ui`.
+
+| Page | Path | What it does |
+|------|------|----------------|
+| Landing page | `/ui/index.html` | Project overview, architecture diagram, tech stack, evaluation results |
+| Live chat | `/ui/chat.html` | A working chat console wired to the real `/chat` endpoint |
+
+**The chat page's signature feature: real-time subsystem indicators.** Next
+to the conversation, a small panel shows four nodes — `MEMORY`, `RAG INDEX`,
+`KNOWLEDGE GRAPH`, `LIVE TOOLS` — that light up based on the actual
+`used_rag` / `used_kg` / `used_tool` flags returned by the API for that
+specific answer. It's a direct visualization of the LangGraph routing
+decision, not a decorative animation.
+
+To use it, start the API and open the chat page in a browser:
+```bash
+uvicorn app.api.main:app --reload
+```
+Then visit `http://127.0.0.1:8000/ui/chat.html` (landing page at
+`http://127.0.0.1:8000/ui/index.html`).
+
+## Tech Stack
+
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| Scraping | `requests` + `BeautifulSoup` | Simple, reliable HTML extraction |
+| Chunking | `langchain-text-splitters` | Battle-tested recursive chunking |
+| Embeddings | `sentence-transformers` (`all-MiniLM-L6-v2`) | Free, local, no API key |
+| Vector store | `FAISS` | Fast, free, in-process similarity search |
+| Entity extraction | `spaCy` (dependency parsing) | Free, offline NER + relation extraction |
+| Knowledge graph | `Neo4j` (AuraDB free tier) | Purpose-built graph database + Cypher queries |
+| Memory | `SQLite` | Zero-setup persistent storage |
+| Orchestration | `LangGraph` | Explicit, inspectable agent state machine |
+| Generation | `Ollama` (`gemma2:2b`) | Fully local LLM, no API key or quota |
+| Evaluation | Custom (cosine similarity + LLM-judge) | Free alternative to RAGAS |
+| API | `FastAPI` | Async, auto-documented, production-ready |
+| Frontend | Plain HTML/CSS/JS | No build step, served directly by FastAPI |
 
 ## Project Structure
 
 ```
 memchat/
 ├── app/
-│   ├── config.py            # centralized settings (reads .env)
-│   ├── ingestion/           # Phase 1: scrape -> clean -> chunk
+│   ├── config.py              # centralized settings (reads .env)
+│   ├── ingestion/              # Phase 1: scrape → clean → chunk
 │   │   ├── scraper.py
 │   │   ├── cleaner.py
 │   │   ├── chunker.py
 │   │   └── run_pipeline.py
-│   ├── rag/                 # Phase 2: embeddings + vector search (next)
-│   ├── graph/                # Phase 3: Neo4j knowledge graph (next)
-│   ├── memory/               # Phase 4: long-term user memory (next)
-│   ├── agent/                 # Phase 5: LangGraph orchestration (next)
-│   ├── eval/                  # Phase 6: evaluation framework (next)
-│   └── api/                   # Phase 7: FastAPI endpoints (next)
-├── data/
-│   ├── raw/                 # raw scraped JSON, one file per page
-│   ├── processed/           # cleaned.jsonl, chunks.jsonl
-│   └── vectorstore/         # FAISS/Chroma index files (generated)
-├── tests/
+│   ├── rag/                     # Phase 2: embeddings + FAISS retrieval
+│   │   ├── embedder.py
+│   │   ├── vectorstore.py
+│   │   ├── build_index.py
+│   │   └── retriever.py
+│   ├── graph/                    # Phase 3: entity extraction + Neo4j
+│   │   ├── extractor.py
+│   │   ├── neo4j_client.py
+│   │   ├── build_graph.py
+│   │   └── query_graph.py
+│   ├── memory/                    # Phase 4: SQLite long-term memory
+│   │   ├── db.py
+│   │   ├── memory_store.py
+│   │   └── demo.py
+│   ├── agent/                      # Phase 5: LangGraph orchestration
+│   │   ├── state.py
+│   │   ├── tools.py
+│   │   ├── llm.py
+│   │   ├── build_agent.py
+│   │   └── chat.py
+│   ├── eval/                        # Phase 6: evaluation framework
+│   │   ├── metrics.py
+│   │   ├── test_set.py
+│   │   └── run_eval.py
+│   └── api/                          # Phase 7: FastAPI web layer
+│       ├── main.py
+│       └── schemas.py
+├── web/                     # Phase 8: static frontend (served by FastAPI)
+│   ├── index.html           # landing page: overview, architecture, eval results
+│   ├── chat.html             # live chat console + subsystem status panel
+│   ├── style.css              # shared blueprint/schematic design system
+│   └── script.js               # chat logic, talks to /chat
+├── data/                    # generated at runtime (gitignored)
+│   ├── raw/                 # scraped JSON
+│   ├── processed/           # cleaned + chunked text
+│   └── vectorstore/         # FAISS index + metadata
 ├── requirements.txt
 ├── .env.example
 └── urls_example.txt
 ```
 
-## Setup
+## Quick Start
 
-1. **Install Python 3.10+**, then create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate        # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+```bash
+# 1. Clone and enter the project
+git clone <your-repo-url>
+cd memchat
 
-2. **Copy the env template** and fill in your keys as you get them:
-   ```bash
-   cp .env.example .env
-   ```
-   You don't need any keys yet for Phase 1 (scraping/cleaning/chunking runs with
-   no API keys). You'll add `OPENAI_API_KEY` in Phase 2 and Neo4j credentials in
-   Phase 3.
+# 2. Set up the environment
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install --upgrade pip
+pip install -r requirements.txt
 
-## Running Phase 1 (Data Pipeline)
+# 3. Configure secrets
+cp .env.example .env
+# fill in NEO4J_URI / NEO4J_USERNAME / NEO4J_PASSWORD (free AuraDB instance)
 
-Put one URL per line in a text file (see `urls_example.txt` for a sample), then:
+# 4. Install local models (one-time)
+python -m spacy download en_core_web_sm
+ollama pull gemma2:2b     # requires Ollama: https://ollama.com/download
 
+# 5. Run the full pipeline
+python -m app.ingestion.run_pipeline --urls urls_example.txt
+python -m app.rag.build_index
+python -m app.graph.build_graph
+python -m app.eval.run_eval
+
+# 6. Chat with it
+python -m app.agent.chat
+
+# 7. Or serve it as an API + web UI
+uvicorn app.api.main:app --reload
+# then open http://127.0.0.1:8000/ui/chat.html  (live chat interface)
+#       or  http://127.0.0.1:8000/ui/index.html (project overview)
+#       or  http://127.0.0.1:8000/docs           (raw API docs)
+```
+
+## Detailed Setup Per Phase
+
+<details>
+<summary><strong>Phase 1 — Data Ingestion Pipeline</strong></summary>
+
+Put one URL per line in a text file (see `urls_example.txt`), then:
 ```bash
 python -m app.ingestion.run_pipeline --urls urls_example.txt
 ```
+Produces `data/raw/*.json` → `data/processed/cleaned.jsonl` → `data/processed/chunks.jsonl`.
+Each step (`scraper.py`, `cleaner.py`, `chunker.py`) can also be run individually.
+</details>
 
-This runs all three steps in order and produces:
-- `data/raw/*.json` — one raw scrape per URL
-- `data/processed/cleaned.jsonl` — cleaned text, one doc per line
-- `data/processed/chunks.jsonl` — chunked text ready for embedding
+<details>
+<summary><strong>Phase 2 — RAG (Embeddings + Vector Search)</strong></summary>
 
-You can also run each step individually:
+Uses a local embedding model (`all-MiniLM-L6-v2`, downloaded once, then offline).
+
 ```bash
-python -m app.ingestion.scraper --urls urls_example.txt
-python -m app.ingestion.cleaner
-python -m app.ingestion.chunker
+python -m app.rag.build_index
+python -m app.rag.retriever "What is retrieval-augmented generation?"
 ```
+</details>
 
-## Running Phase 2 (RAG: Embeddings + Vector Search)
+<details>
+<summary><strong>Phase 3 — Knowledge Graph (spaCy + Neo4j)</strong></summary>
 
-Phase 2 uses a **local, free embedding model** (`all-MiniLM-L6-v2` via
-`sentence-transformers`) — no API key needed. On the very first run it
-downloads the model (~90MB) from Hugging Face and caches it in
-`~/.cache/huggingface`; after that it works fully offline.
+Requires a free [Neo4j AuraDB](https://neo4j.com/cloud/aura/) instance —
+set `NEO4J_URI` / `NEO4J_USERNAME` / `NEO4J_PASSWORD` in `.env`.
 
-1. Make sure you've already run Phase 1 so `data/processed/chunks.jsonl` exists.
-
-2. Build the vector index:
-   ```bash
-   python -m app.rag.build_index
-   ```
-   This embeds every chunk and saves the index to `data/vectorstore/`
-   (`index.faiss` + `metadata.jsonl`).
-
-3. Query it:
-   ```bash
-   python -m app.rag.retriever "What is retrieval-augmented generation?"
-   ```
-   This prints the top 5 most relevant chunks with similarity scores.
-
-Files:
-- `app/rag/embedder.py` — loads the local model, embeds text
-- `app/rag/vectorstore.py` — FAISS wrapper (add / search / save / load)
-- `app/rag/build_index.py` — builds the index from `chunks.jsonl`
-- `app/rag/retriever.py` — embeds a query and searches the index
-
-## Running Phase 3 (Knowledge Graph: Entity Extraction + Neo4j)
-
-Phase 3 uses **spaCy** (free, offline, no API key) to extract (entity, relation,
-entity) triples from your scraped documents via dependency parsing, then loads
-them into Neo4j as a graph.
-
-This is a lighter-weight heuristic approach than using an LLM — it won't catch
-every relationship an LLM would, but it's completely free and runs locally.
-
-**Requires:** `NEO4J_URI` / `NEO4J_USERNAME` / `NEO4J_PASSWORD` set in your
-`.env`. No OpenAI key needed for this phase.
-
-1. Install spaCy and its small English model (one-time):
-   ```bash
-   pip install spacy
-   python -m spacy download en_core_web_sm
-   ```
-
-2. Make sure Phase 1 has already run so `data/processed/cleaned.jsonl` exists.
-
-3. Build the graph:
-   ```bash
-   python -m app.graph.build_graph
-   ```
-   Add `--limit 1` to test on just one document first, or `--clear-first` to
-   wipe the graph before rebuilding.
-
-4. Query it:
-   ```bash
-   python -m app.graph.query_graph "RAG"
-   ```
-   This prints every relationship in the graph involving anything matching
-   "RAG" (case-insensitive substring match).
-
-5. You can also explore visually: log into https://console.neo4j.io, open your
-   instance, go to **Query**, and run:
-   ```cypher
-   MATCH (a)-[r]->(b) RETURN a, r, b LIMIT 100
-   ```
-
-Files:
-- `app/graph/neo4j_client.py` — connection + write/query helpers
-- `app/graph/extractor.py` — spaCy-based triple extraction (dependency parsing)
-- `app/graph/build_graph.py` — runs extraction over all documents, loads into Neo4j
-- `app/graph/query_graph.py` — CLI to query the graph
-
-**Cost note:** entirely free — no API key or billing required for this phase.
-
-## Running Phase 4 (Long-Term Memory)
-
-Phase 4 uses **SQLite** — built into Python, zero setup, no account or server
-needed. It stores durable user preferences and full conversation history in a
-single file: `data/memory.db`.
-
-(Note: the original problem statement suggested MongoDB/Postgres. SQLite was
-chosen instead for simplicity — same purpose, no infrastructure to manage.
-Swapping in MongoDB/Postgres later would only mean changing `app/memory/db.py`.)
-
-1. Try the demo (creates the DB automatically on first run):
-   ```bash
-   python -m app.memory.demo
-   ```
-   This stores a couple of preferences and messages for a demo user, then
-   prints the assembled "memory context" — the text block that Phase 5 (the
-   LangGraph agent) will feed into the LLM so it can personalize responses.
-
-2. Run it again — you'll see history accumulate across runs, since it's
-   reading from the same `data/memory.db` file each time.
-
-Files:
-- `app/memory/db.py` — SQLite connection + schema (users, preferences, messages)
-- `app/memory/memory_store.py` — read/write functions (`set_preference`,
-  `get_preferences`, `add_message`, `get_recent_history`, `get_memory_context`)
-- `app/memory/demo.py` — a runnable demo showing it all working together
-
-**Cost note:** entirely free, no dependencies beyond Python's standard library.
-
-## Running Phase 5 (LangGraph Agent: RAG + Knowledge Graph + Memory + Tools)
-
-This is where everything comes together. The agent is a LangGraph workflow
-that, for every user message:
-
-1. **Loads memory** (Phase 4) — preferences + recent conversation history
-2. **Retrieves from RAG** (Phase 2) — relevant chunks from the vector store
-3. **Queries the knowledge graph** (Phase 3) — relevant entity relationships
-4. **Routes to a live tool if needed** (e.g. weather, current time) — a simple
-   keyword-based router decides this; a more advanced system could use an
-   LLM for the routing decision itself
-5. **Generates the final answer** using a local Ollama model (fully free, no
-   API key, no quota — runs entirely on your machine), given all of the
-   above as context
-6. **Saves the exchange back to memory** for future turns
-
-**Requires:** [Ollama](https://ollama.com/download) installed and running,
-with a model pulled (`ollama pull llama3.2:1b`). RAG and Neo4j are used if
-available, but the agent degrades gracefully and still answers if either
-isn't set up yet (it'll just say so in its reasoning).
-
-1. Install Ollama (https://ollama.com/download) and pull a model:
-   ```bash
-   ollama pull llama3.2:1b
-   ```
-   (Use `ollama pull llama3.2` instead for the larger, higher-quality 3B
-   version if your machine has 16GB+ RAM.)
-
-2. Chat with it interactively:
-   ```bash
-   python -m app.agent.chat
-   ```
-   Type a question, get an answer, type `exit` to quit. Try asking about
-   something from your scraped documents (e.g. "What is RAG?"), then try
-   something time-sensitive (e.g. "What time is it right now?") to see the
-   tool-routing kick in.
-
-Files:
-- `app/agent/state.py` — the shared state passed between nodes
-- `app/agent/tools.py` — free dynamic tools (current time, weather via wttr.in)
-  and the keyword-based tool router
-- `app/agent/llm.py` — Ollama wrapper for response generation (local HTTP call)
-- `app/agent/build_agent.py` — the LangGraph workflow (nodes + routing)
-- `app/agent/chat.py` — interactive CLI
-
-**Cost note:** entirely free — Ollama runs the model locally, no account,
-no API key, no usage limits.
-
-## Running Phase 6 (Evaluation Framework)
-
-Phase 6 measures response quality automatically — no manual grading, and no
-paid API. It reuses tools you already have:
-
-- **Context relevance** — cosine similarity between the question and the
-  RAG chunks retrieved for it (uses the same free local embedding model
-  from Phase 2). High = the retriever pulled back genuinely relevant material.
-- **Answer relevance** — cosine similarity between the question and the
-  generated answer. High = the answer is actually on-topic.
-- **Faithfulness** — your local Ollama model (Phase 5) acts as a free
-  "LLM judge," scoring 0–1 on whether the answer's claims are actually
-  supported by the retrieved context, or made up.
-
-This mirrors what a library like RAGAS measures, implemented locally so
-everything stays free.
-
-1. Make sure Phases 1, 2, and 5 are working (RAG index built, Ollama running).
-   Neo4j is optional for this phase.
-
-2. Run the evaluation:
-   ```bash
-   python -m app.eval.run_eval
-   ```
-   This runs every question in `app/eval/test_set.py` through the full
-   agent, scores each response, and prints a summary. Full per-question
-   results are saved to `data/eval_results.json`.
-
-3. Edit `app/eval/test_set.py` to add your own questions relevant to
-   whatever you've scraped.
-
-Files:
-- `app/eval/metrics.py` — context relevance, answer relevance, faithfulness
-- `app/eval/test_set.py` — the list of questions to evaluate against
-- `app/eval/run_eval.py` — runs the agent + scores + saves a report
-
-**Cost note:** entirely free — reuses the local embedding model and your
-local Ollama model, no paid API calls.
-
-## Running Phase 7 (API Layer)
-
-Phase 7 exposes the entire system as a web API using FastAPI, so it can be
-called from a frontend, a mobile app, curl, Postman, or anything else that
-can make an HTTP request.
-
-1. Start the server:
-   ```bash
-   uvicorn app.api.main:app --reload
-   ```
-
-2. Open **http://127.0.0.1:8000/docs** in your browser — FastAPI
-   auto-generates interactive API documentation where you can try every
-   endpoint directly from the browser.
-
-**Endpoints:**
-
-| Method | Path              | Description                                        |
-|--------|-------------------|-----------------------------------------------------|
-| GET    | `/health`         | Liveness check                                      |
-| POST   | `/chat`           | Send `{user_id, query}`, get `{answer}` — runs the full agent pipeline |
-| GET    | `/memory/{user_id}` | See stored preferences + recent history for a user |
-| GET    | `/rag/search?q=...` | Directly search the RAG vector store               |
-| GET    | `/kg/search?entity=...` | Directly query the knowledge graph              |
-
-Example with curl:
 ```bash
-curl -X POST http://127.0.0.1:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "curl_user", "query": "What is RAG?"}'
+python -m spacy download en_core_web_sm
+python -m app.graph.build_graph          # add --limit 1 to test small first
+python -m app.graph.query_graph "RAG"
 ```
+</details>
 
-Files:
-- `app/api/main.py` — the FastAPI app and all routes
-- `app/api/schemas.py` — Pydantic request/response models
+<details>
+<summary><strong>Phase 4 — Long-Term Memory (SQLite)</strong></summary>
 
-**Cost note:** entirely free — FastAPI/uvicorn are just a web server running
-locally, no external service involved.
+No setup needed — SQLite is part of Python's standard library.
 
----
+```bash
+python -m app.memory.demo
+```
+Stores preferences + conversation history in `data/memory.db`.
+</details>
 
-## Project complete
+<details>
+<summary><strong>Phase 5 — LangGraph Agent (RAG + KG + Memory + Tools)</strong></summary>
 
-All 7 phases are now implemented, end-to-end, entirely free:
+Requires [Ollama](https://ollama.com/download) installed and running.
 
-1. Data ingestion pipeline (scrape → clean → chunk)
-2. RAG (local embeddings + FAISS vector search)
-3. Knowledge graph (spaCy extraction + Neo4j)
-4. Long-term memory (SQLite)
-5. LangGraph agent (routes between RAG, KG, memory, live tools; generates
-   with local Ollama)
-6. Evaluation framework (context relevance, answer relevance, faithfulness)
-7. FastAPI web API
+```bash
+ollama pull gemma2:2b
+python -m app.agent.chat
+```
+The agent routes between RAG, the knowledge graph, and live tools
+(current time, weather via wttr.in) based on the query, then generates a
+response with a local LLM and saves the turn to memory.
+</details>
 
-No paid API keys or billing were required anywhere in this build.
+<details>
+<summary><strong>Phase 6 — Evaluation Framework</strong></summary>
+
+```bash
+python -m app.eval.run_eval
+```
+Scores every question in `app/eval/test_set.py` on:
+- **Context relevance** (cosine similarity, question ↔ retrieved chunks)
+- **Answer relevance** (cosine similarity, question ↔ answer)
+- **Faithfulness** (local LLM-as-judge: is the answer grounded in context?)
+
+Full results saved to `data/eval_results.json`.
+</details>
+
+<details>
+<summary><strong>Phase 7 — API Layer (FastAPI)</strong></summary>
+
+```bash
+uvicorn app.api.main:app --reload
+```
+Open `http://127.0.0.1:8000/docs` for interactive API documentation.
+
+| Method | Path | Description |
+|--------|------|--------------|
+| GET | `/health` | Liveness check |
+| POST | `/chat` | `{user_id, query}` → `{answer}` (runs the full pipeline) |
+| GET | `/memory/{user_id}` | Inspect stored preferences + history |
+| GET | `/rag/search?q=...` | Raw RAG retrieval results |
+| GET | `/kg/search?entity=...` | Raw knowledge graph query |
+</details>
+
+<details>
+<summary><strong>Phase 8 — Web Interface</strong></summary>
+
+Static frontend, no build step, served directly by FastAPI at `/ui`.
+
+```bash
+uvicorn app.api.main:app --reload
+```
+- `http://127.0.0.1:8000/ui/index.html` — landing page (overview, architecture, eval results)
+- `http://127.0.0.1:8000/ui/chat.html` — live chat console
+
+The chat page's status panel (`MEMORY` / `RAG INDEX` / `KNOWLEDGE GRAPH` /
+`LIVE TOOLS`) lights up based on the real `used_rag` / `used_kg` /
+`used_tool` flags the `/chat` endpoint returns for each answer — it's a
+live view into the LangGraph routing decision, not a static mockup.
+</details>
+
+## Evaluation Results
+
+Example run on the sample dataset (2 Wikipedia articles on RAG and
+knowledge graphs), evaluated with a local `gemma2:2b` model:
+
+| Metric | Score | What it means |
+|--------|-------|----------------|
+| Context relevance | ~0.46 | Retriever finds moderately related chunks |
+| Answer relevance | ~0.73 | Answers stay on-topic for the question asked |
+| Faithfulness | ~0.52 | About half the answers are fully grounded in retrieved context |
+
+*(Run `python -m app.eval.run_eval` to reproduce on your own data.)*
+
+## Design Decisions
+
+This build deliberately swaps a few components from the original spec for
+**zero-cost, easy-to-run alternatives**, documented here for transparency:
+
+- **SQLite instead of MongoDB/Postgres** for long-term memory — same
+  purpose, no server or account to manage. Swapping in a different store
+  only requires changing `app/memory/db.py`.
+- **spaCy dependency parsing instead of an LLM** for entity/relationship
+  extraction — free and offline, at the cost of some precision (an LLM
+  extractor would catch more nuanced relationships).
+- **Ollama instead of a hosted LLM API** for response generation — no
+  billing or quota limits, running small open models locally.
+
+## Known Limitations
+
+- Small local models (`gemma2:2b`) occasionally blend retrieved facts with
+  their own training knowledge rather than staying strictly grounded —
+  reflected in the faithfulness score above.
+- The web-scraping cleaner doesn't fully strip citation/reference-list
+  sections from Wikipedia-style pages, slightly diluting retrieval quality.
+- spaCy-based extraction produces noisier entities than an LLM would
+  (e.g. stray section numbers occasionally get treated as entities).
+
+These are documented tradeoffs of the free/local approach, not open bugs —
+each is described alongside its cheap production alternative above.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
