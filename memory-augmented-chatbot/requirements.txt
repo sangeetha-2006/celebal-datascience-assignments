@@ -1,0 +1,44 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
+python-dotenv==1.0.1
+
+# Web scraping
+requests==2.32.3
+beautifulsoup4==4.12.3
+lxml==5.3.0
+
+# Text processing
+langchain-text-splitters==0.3.0
+
+# Embeddings + vector store (choose one; both listed, faiss is default)
+faiss-cpu==1.8.0.post1
+chromadb==0.5.5
+sentence-transformers==3.1.1
+
+# LangGraph / LangChain orchestration
+langgraph>=0.2.28,<0.3.0
+langchain>=0.3.1,<0.4.0
+langchain-openai>=0.2.1,<0.3.0
+langchain-community>=0.3.1,<0.4.0
+
+# LLM for agent response generation: Ollama (fully local, no API key/quota)
+# Install separately: https://ollama.com/download, then `ollama pull llama3.2:1b`
+# No Python package needed — the agent talks to Ollama's local HTTP API via `requests`.
+
+# Knowledge graph
+neo4j==5.24.0
+spacy==3.7.5
+
+# Databases
+pymongo==4.9.1
+sqlalchemy==2.0.35
+psycopg2-binary==2.9.9
+
+# Evaluation (0.2.x is compatible with langchain-core 0.3.x)
+ragas>=0.2.0,<0.3.0
+datasets==2.21.0
+
+# Utilities
+tqdm==4.66.5
