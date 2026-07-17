@@ -111,7 +111,7 @@
 
       <rect class="node-box" x="320" y="360" width="230" height="56" rx="3"/>
       <text class="node-label" x="435" y="384" text-anchor="middle">GENERATE</text>
-      <text class="node-sub" x="435" y="400" text-anchor="middle">Ollama · gemma2:2b (local)</text>
+      <text class="node-sub" x="435" y="400" text-anchor="middle">Ollama · local LLM</text>
 
       <path class="edge" d="M435,416 V440" marker-end="url(#arrow)"/>
       <text class="node-label" x="435" y="460" text-anchor="middle" style="fill:var(--active)">RESPONSE</text>
@@ -178,7 +178,7 @@
       <tr><td class="key">Knowledge graph</td><td>Neo4j AuraDB</td><td>Purpose-built graph queries</td></tr>
       <tr><td class="key">Memory</td><td>SQLite</td><td>Zero-setup persistence</td></tr>
       <tr><td class="key">Orchestration</td><td>LangGraph</td><td>Explicit, inspectable agent state</td></tr>
-      <tr><td class="key">Generation</td><td>Ollama (gemma2:2b)</td><td>Fully local, no billing or quota</td></tr>
+      <tr><td class="key">Generation</td><td>Ollama (local LLM)</td><td>Fully local, no billing or quota</td></tr>
       <tr><td class="key">API</td><td>FastAPI</td><td>Async, auto-documented</td></tr>
     </tbody>
   </table>
@@ -187,7 +187,7 @@
 <section id="eval" class="wrap">
   <div class="eyebrow">04 · Instrument Readout</div>
   <h2>Evaluation results</h2>
-  <p>Measured automatically against a sample dataset — no paid API, no manual grading. Reproduce with <code class="mono">python -m app.eval.run_eval</code>.</p>
+  <p>Measured automatically against a sample dataset — no paid API, no manual grading. Reproduce with <code class="mono">python -m app.eval.run_eval</code>. Results vary depending on which local model is configured in <code class="mono">app/agent/llm.py</code> — re-run after switching models.</p>
 
   <div class="gauges">
     <div>
@@ -207,7 +207,7 @@
   <div class="card-grid">
     <div class="card">
       <h3>WHY NOT PERFECT</h3>
-      <p>A 2B-parameter local model occasionally blends retrieved facts with its own training knowledge instead of staying strictly grounded — the tradeoff for running fully free and local.</p>
+      <p>A small local LLM occasionally blends retrieved facts with its own training knowledge instead of staying strictly grounded — the tradeoff for running fully free and local, regardless of model size.</p>
     </div>
     <div class="card">
       <h3>DESIGN CHOICE</h3>

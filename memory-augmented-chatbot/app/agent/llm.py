@@ -8,7 +8,8 @@ Then pull a model once: `ollama pull llama3.2:1b`
 import requests
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-DEFAULT_MODEL = "gemma2:2b"
+DEFAULT_MODEL = "qwen2.5:7b"
+
 
 
 def generate(prompt: str, model: str = DEFAULT_MODEL) -> str:

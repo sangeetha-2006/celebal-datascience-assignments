@@ -87,14 +87,18 @@ def get_memory_context(user_id: str, history_limit: int = 10) -> str:
 
     if prefs:
         pref_lines = "\n".join(f"- {k}: {v}" for k, v in prefs.items())
-        parts.append(f"User preferences:\n{pref_lines}")
+        parts.append(f"USER PREFERENCES:\n{pref_lines}")
     else:
-        parts.append("User preferences: none recorded yet.")
+        parts.append("USER PREFERENCES: none recorded yet.")
 
     if history:
-        history_lines = "\n".join(f"{m['role']}: {m['content']}" for m in history)
-        parts.append(f"Recent conversation history:\n{history_lines}")
+        # Numbered turns, clearly labeled — easier for a small model to
+        # scan when asked "did I mention X before?"
+        history_lines = "\n".join(
+            f"Turn {i}: {m['role'].upper()}: {m['content']}" for i, m in enumerate(history, start=1)
+        )
+        parts.append(f"CONVERSATION HISTORY:\n{history_lines}")
     else:
-        parts.append("Recent conversation history: none yet (new conversation).")
+        parts.append("CONVERSATION HISTORY: none yet (this is the first message).")
 
     return "\n\n".join(parts)

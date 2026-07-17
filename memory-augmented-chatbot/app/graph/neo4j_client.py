@@ -57,13 +57,22 @@ class Neo4jClient:
             self.write_triple(t["source"], t["relation"], t["target"], source_url=source_url)
 
     def query_entity(self, name: str) -> list[dict]:
-        """Return all relationships (in both directions) involving an entity,
-        matched case-insensitively on a substring of the name.
+        """Return all relationships (in both directions) involving any entity
+        related to `name`. Matches bidirectionally so this works for both:
+        - short lookups (e.g. CLI: query_graph.py "RAG") -> entity name contains name
+        - full natural-language questions (e.g. "Who founded Apple?") -> the
+          question mentions the entity name
+        A minimum entity name length avoids short/common words causing noisy
+        false matches.
         """
         cypher = (
             "MATCH (a:Entity)-[r]->(b:Entity) "
-            "WHERE toLower(a.name) CONTAINS toLower($name) "
-            "   OR toLower(b.name) CONTAINS toLower($name) "
+            "WHERE (size(a.name) > 2 AND ("
+            "        toLower(a.name) CONTAINS toLower($name) "
+            "        OR toLower($name) CONTAINS toLower(a.name))) "
+            "   OR (size(b.name) > 2 AND ("
+            "        toLower(b.name) CONTAINS toLower($name) "
+            "        OR toLower($name) CONTAINS toLower(b.name))) "
             "RETURN a.name AS source, type(r) AS relation, b.name AS target, "
             "       r.source_url AS source_url "
             "LIMIT 50"
