@@ -333,17 +333,21 @@ live view into the LangGraph routing decision, not a static mockup.
 ## Evaluation Results
 
 Example run on the sample dataset (2 Wikipedia articles on RAG and
-knowledge graphs), evaluated with an earlier local `gemma2:2b` model —
-scores will differ if you switch to a different model in
-`app/agent/llm.py` (larger models generally score higher on faithfulness):
+knowledge graphs), evaluated with the current local model, `qwen2.5:7b`:
 
 | Metric | Score | What it means |
 |--------|-------|----------------|
-| Context relevance | ~0.46 | Retriever finds moderately related chunks |
-| Answer relevance | ~0.73 | Answers stay on-topic for the question asked |
-| Faithfulness | ~0.52 | About half the answers are fully grounded in retrieved context |
+| Context relevance | ~0.50 | Retriever finds moderately-to-well related chunks |
+| Answer relevance | ~0.70 | Answers stay on-topic for the question asked |
+| Faithfulness | ~0.74 | Most answers are grounded in retrieved context |
 
-*(Run `python -m app.eval.run_eval` to reproduce on your own data/model.)*
+For comparison, an earlier test with a smaller model (`gemma2:2b`) scored
+notably lower on faithfulness (~0.52) — confirming that a larger local model
+measurably improves grounding, even though neither model fully eliminates
+the context-override issue described below in Known Limitations.
+
+*(Run `python -m app.eval.run_eval` to reproduce on your own data/model —
+scores depend on whichever model is set in `app/agent/llm.py`.)*
 
 ## Design Decisions
 
