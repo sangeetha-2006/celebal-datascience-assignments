@@ -122,7 +122,7 @@ Then visit `http://127.0.0.1:8000/ui/chat.html` (landing page at
 | Knowledge graph | `Neo4j` (AuraDB free tier) | Purpose-built graph database + Cypher queries |
 | Memory | `SQLite` | Zero-setup persistent storage |
 | Orchestration | `LangGraph` | Explicit, inspectable agent state machine |
-| Generation | `Ollama` (`gemma2:2b`) | Fully local LLM, no API key or quota |
+| Generation | `Ollama` (local LLM, e.g. `qwen2.5`/`gemma2`) | Fully local LLM, no API key or quota |
 | Evaluation | Custom (cosine similarity + LLM-judge) | Free alternative to RAGAS |
 | API | `FastAPI` | Async, auto-documented, production-ready |
 | Frontend | Plain HTML/CSS/JS | No build step, served directly by FastAPI |
@@ -198,10 +198,13 @@ cp .env.example .env
 
 # 4. Install local models (one-time)
 python -m spacy download en_core_web_sm
-ollama pull gemma2:2b     # requires Ollama: https://ollama.com/download
+ollama pull qwen2.5:3b     # or gemma2:2b for lower RAM, requires Ollama: https://ollama.com/download
+# (whichever you pick, set it in app/agent/llm.py -> DEFAULT_MODEL)
 
 # 5. Run the full pipeline
 python -m app.ingestion.run_pipeline --urls urls_example.txt
+python -m app.ingestion.local_docs README.md   # optional: let RAG answer questions about this project itself
+python -m app.ingestion.chunker
 python -m app.rag.build_index
 python -m app.graph.build_graph
 python -m app.eval.run_eval
@@ -270,12 +273,13 @@ Stores preferences + conversation history in `data/memory.db`.
 Requires [Ollama](https://ollama.com/download) installed and running.
 
 ```bash
-ollama pull gemma2:2b
+ollama pull qwen2.5:3b   # or gemma2:2b if your machine has less RAM
 python -m app.agent.chat
 ```
 The agent routes between RAG, the knowledge graph, and live tools
 (current time, weather via wttr.in) based on the query, then generates a
-response with a local LLM and saves the turn to memory.
+response with a local LLM and saves the turn to memory. Which model it
+uses is set in `app/agent/llm.py` (`DEFAULT_MODEL`).
 </details>
 
 <details>
@@ -329,7 +333,9 @@ live view into the LangGraph routing decision, not a static mockup.
 ## Evaluation Results
 
 Example run on the sample dataset (2 Wikipedia articles on RAG and
-knowledge graphs), evaluated with a local `gemma2:2b` model:
+knowledge graphs), evaluated with an earlier local `gemma2:2b` model —
+scores will differ if you switch to a different model in
+`app/agent/llm.py` (larger models generally score higher on faithfulness):
 
 | Metric | Score | What it means |
 |--------|-------|----------------|
@@ -337,7 +343,7 @@ knowledge graphs), evaluated with a local `gemma2:2b` model:
 | Answer relevance | ~0.73 | Answers stay on-topic for the question asked |
 | Faithfulness | ~0.52 | About half the answers are fully grounded in retrieved context |
 
-*(Run `python -m app.eval.run_eval` to reproduce on your own data.)*
+*(Run `python -m app.eval.run_eval` to reproduce on your own data/model.)*
 
 ## Design Decisions
 
@@ -355,13 +361,24 @@ This build deliberately swaps a few components from the original spec for
 
 ## Known Limitations
 
-- Small local models (`gemma2:2b`) occasionally blend retrieved facts with
-  their own training knowledge rather than staying strictly grounded —
-  reflected in the faithfulness score above.
+- **Local models sometimes override correct retrieved context with their own
+  (wrong) prior knowledge.** Tested directly: after fixing retrieval so the
+  correct document ranked #1 and adding an explicit "you MUST use CONTEXT"
+  rule, both `gemma2:2b` and `qwen2.5:7b` still answered a project-specific
+  question from their own incorrect training-data assumption about the term,
+  rather than the correct context sitting in front of them. This is a
+  documented failure mode in RAG systems generally (sometimes called
+  "knowledge conflict"), not unique to small models — it happens with paid
+  models too, just less often. No amount of prompt engineering fully
+  eliminates it; only a stronger base model reliably reduces it.
 - The web-scraping cleaner doesn't fully strip citation/reference-list
   sections from Wikipedia-style pages, slightly diluting retrieval quality.
 - spaCy-based extraction produces noisier entities than an LLM would
   (e.g. stray section numbers occasionally get treated as entities).
+- Retrieval uses semantic similarity plus a lightweight exact-keyword-match
+  boost (see `app/rag/retriever.py`) rather than full hybrid search (BM25 +
+  cross-encoder reranking) — good enough for this dataset size, but a real
+  hybrid search stack would scale better to larger document sets.
 
 These are documented tradeoffs of the free/local approach, not open bugs —
 each is described alongside its cheap production alternative above.
