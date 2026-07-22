@@ -198,7 +198,7 @@ cp .env.example .env
 
 # 4. Install local models (one-time)
 python -m spacy download en_core_web_sm
-ollama pull qwen2.5:3b     # or gemma2:2b for lower RAM, requires Ollama: https://ollama.com/download
+ollama pull qwen2.5:7b     # or gemma2:2b for lower RAM, requires Ollama: https://ollama.com/download
 # (whichever you pick, set it in app/agent/llm.py -> DEFAULT_MODEL)
 
 # 5. Run the full pipeline
